@@ -1,0 +1,20 @@
+[project]
+name = "model-forge"
+version = "0.1.0"
+description = "All in one place for MLOps"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+ "pyqt6>=6.10.1",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+model-forge = "main:main"
+
