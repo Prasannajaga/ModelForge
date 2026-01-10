@@ -63,6 +63,10 @@ class ConvertOnnxModel:
             logger.exception(f"Conversion failed: {str(e)}")
             raise e
 
+
+    def is_torchscript_model(model) -> bool: 
+        return isinstance(model, torch.jit.RecursiveScriptModule)
+    
     def _convert_pytorch(
         self,
         input_path: str,
@@ -79,22 +83,18 @@ class ConvertOnnxModel:
             dummy_input = (dummy_input,)
   
         output_path = os.path.abspath(output_path)
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
- 
-        is_torchscript = isinstance(
-            model, torch.jit.RecursiveScriptModule
-        )
+        os.makedirs(os.path.dirname(output_path), exist_ok=True) 
 
         try:
-            if is_torchscript:  
-                print("Using legacy path")
-                # LEGACY PATH (TorchScript → ONNX)
-                # This path is stable and must NOT use torch.export 
+            if self.is_torchscript_model(model):  
+                print("Using legacy path for Script Model")
+                # LEGACY PATH (TorchScript → ONNX)  
                 torch.onnx.export(
                     model,
                     dummy_input,
                     output_path,
                     opset_version=opset,
+                    dynamo=False
                 ) 
             else: 
                 print("Using modern path")
@@ -103,7 +103,9 @@ class ConvertOnnxModel:
                     dummy_input,
                     output_path,
                     opset_version=opset,
+                    dynamo=False
                 ) 
+
                 # MODERN PATH (Eager → torch.export → ONNX) 
                 # exported = torch.export.export(
                 #     model,
