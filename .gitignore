@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+test.py
+# ML Models
+*.onnx
+*.onnx.data
