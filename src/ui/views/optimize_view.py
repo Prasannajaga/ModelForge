@@ -177,7 +177,7 @@ class OptimizeView(QWidget):
         frame_label = QLabel("Framework:")
         frame_label.setStyleSheet(f"color: {TEXT_SECONDARY};")
         self.frame_combo = QComboBox()
-        self.frame_combo.addItems(["PyTorch (.pt, .pth)", "TensorFlow (.pb)", "Keras (.h5)"])
+        self.frame_combo.addItems(["PyTorch (.pt, .pth)",  "TensorFlow, Keras (.h5, .keras)"])
         self.frame_combo.setStyleSheet(INPUT_STYLE)
         self.frame_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         frame_layout.addWidget(frame_label)
@@ -195,13 +195,13 @@ class OptimizeView(QWidget):
         
         row1 = QHBoxLayout()
         # Input Shapes
-        shape_layout = QVBoxLayout()
-        shape_label = QLabel("Input Shapes (Name: Shape)")
-        shape_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
-        self.shape_input = QLineEdit("input_ids: [1, 128]")
+        # shape_layout = QVBoxLayout()
+        # shape_label = QLabel("Input Shapes (Name: Shape)")
+        # shape_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
+        self.shape_input = QLineEdit("")
         self.shape_input.setStyleSheet(INPUT_STYLE)
-        shape_layout.addWidget(shape_label)
-        shape_layout.addWidget(self.shape_input)
+        # shape_layout.addWidget(shape_label)
+        # shape_layout.addWidget(self.shape_input)
         
         # Opset Version
         opset_layout = QVBoxLayout()
@@ -213,22 +213,17 @@ class OptimizeView(QWidget):
         opset_layout.addWidget(opset_label)
         opset_layout.addWidget(self.opset_combo)
         
-        row1.addLayout(shape_layout, 2)
+        # row1.addLayout(shape_layout, 2)
         row1.addLayout(opset_layout, 1)
         l2.addLayout(row1)
         
         # Buttons Row
-        row2 = QHBoxLayout()
-        add_input_btn = QPushButton("Add Input")
-        add_input_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        row2 = QHBoxLayout() 
         self.opt_check = QCheckBox("Apply Basic Optimizations")
         self.opt_check.setChecked(True)
         self.opt_check.setCursor(Qt.CursorShape.PointingHandCursor)
         self.opt_check.setStyleSheet(CHECKBOX_STYLE)
-        
-        add_input_btn.setStyleSheet(f"background-color: transparent; border: 1px solid {ACCENT_BLUE}; color: {ACCENT_BLUE}; padding: 6px 12px; border-radius: 4px;")
-
-        row2.addWidget(add_input_btn)
+         
         row2.addWidget(self.opt_check)
         l2.addLayout(row2)
         torch_layout.addWidget(card2)
@@ -497,29 +492,10 @@ class OptimizeView(QWidget):
         quant_btn.clicked.connect(self.run_quantization)
         l5.addWidget(quant_btn)
         
-        # Progress
-        prog_row = QHBoxLayout()
-        prog_lbl = QLabel("Progress:")
-        prog_lbl.setStyleSheet(f"color: {TEXT_SECONDARY};")
-        self.prog_bar = QProgressBar()
-        self.prog_bar.setValue(0) 
-        self.prog_bar.setStyleSheet(f"""
-            QProgressBar {{
-                border: none;
-                background-color: {INPUT_BG};
-                height: 8px;
-                border-radius: 4px;
-            }}
-            QProgressBar::chunk {{
-                background-color: {ACCENT_BLUE};
-                border-radius: 4px;
-            }}
-        """)
-        self.prog_bar.setTextVisible(False)
-        
-        prog_row.addWidget(prog_lbl)
-        prog_row.addWidget(self.prog_bar, 1)
-        l5.addLayout(prog_row)
+        # Status
+        self.status_label_quant = QLabel("Status: Ready to quantize")
+        self.status_label_quant.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
+        l5.addWidget(self.status_label_quant)
         
         layout.addWidget(card5)
         layout.addStretch()
@@ -580,7 +556,7 @@ class OptimizeView(QWidget):
         quant_type = "QDQ" if self.type_qdq.isChecked() else "INT8"
         per_channel = self.per_channel_check.isChecked()
         
-        self.prog_bar.setValue(10)
+        self.status_label_quant.setText("Status: Quantizing...")
         try:
             success = self.quantizer.quantize(
                 input_model,
@@ -591,9 +567,10 @@ class OptimizeView(QWidget):
                 per_channel,
                 self.calib_data_path
             )
-            self.prog_bar.setValue(100)
+            if success:
+                self.status_label_quant.setText("Status: Success - Quantized model saved")
+            else:
+                self.status_label_quant.setText("Status: Failed")
         except Exception as e:
-            self.prog_bar.setValue(0)
-            # Find a way to show error, maybe in label/message box.
-            # For now, print to console or we need a status label in quantize panel too (mockup didn't explicitly expect it but good to have)
+            self.status_label_quant.setText(f"Status: Error - {str(e)}")
             print(f"Quantization Failed: {e}")

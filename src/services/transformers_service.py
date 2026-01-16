@@ -23,19 +23,13 @@ class TransformersService:
         """
         logger.info(f"Starting HF conversion for: {model_id} to {output_path}")
         
-        try:
-            # Create output directory if needed
+        try: 
             output_dir = os.path.dirname(output_path)
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
-            
-            # If output_path includes a filename, we mainly need the directory for export
-            # Optimum exports as 'model.onnx' by default in the directory.
-            # We will handle renaming if a specific filename is requested.
-            target_filename = os.path.basename(output_path)
+              
             export_dir = output_dir if output_dir else "."
-            
-            # Simple auto-task detection logic fallback
+             
             if task is None:
                 try:
                     config = AutoConfig.from_pretrained(model_id)
@@ -43,7 +37,7 @@ class TransformersService:
                     if "SequenceClassification" in arch:
                         task = "text-classification"
                     else:
-                        task = "feature-extraction" # Default safe bet for embeddings
+                        task = "feature-extraction"  
                 except Exception:
                     task = "feature-extraction"
             
@@ -54,18 +48,9 @@ class TransformersService:
             elif task == "text-classification":
                  model = ORTModelForSequenceClassification.from_pretrained(model_id, export=True)
             else:
-                # Fallback to feature extraction or raise error
                 model = ORTModelForFeatureExtraction.from_pretrained(model_id, export=True)
 
-            # Save model
-            model.save_pretrained(export_dir)
-            
-            # Rename if necessary (Optimum saves as model.onnx)
-            default_path = os.path.join(export_dir, "model.onnx")
-            if target_filename != "model.onnx" and os.path.exists(default_path):
-                final_path = os.path.join(export_dir, target_filename)
-                os.replace(default_path, final_path)
-                logger.info(f"Renamed model.onnx to {target_filename}")
+            model.save_pretrained(export_dir) 
 
             logger.info(f"Successfully converted {model_id}")
             return True

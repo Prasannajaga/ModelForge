@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
             "optimize_page": OptimizeView
         }
         
-        for label, page_id in MENU_ITEMS:
+        for i, (label, page_id) in enumerate(MENU_ITEMS):
             # Create Button
             btn = self.create_sidebar_button(label)
             self.sidebar_layout.addWidget(btn)
@@ -71,7 +71,12 @@ class MainWindow(QMainWindow):
             
             # Connect Button
             # Use default argument capture for lambda loop variable
-            btn.clicked.connect(lambda checked, p=page: self.content_area.setCurrentWidget(p))
+            btn.clicked.connect(lambda checked, pid=page_id: self.handle_menu_click(pid))
+
+            # Set first item as active by default
+            if i == 0:
+                btn.setChecked(True)
+                self.content_area.setCurrentWidget(page)
 
         self.sidebar_layout.addStretch()
         
@@ -83,5 +88,15 @@ class MainWindow(QMainWindow):
         btn = QPushButton(text)
         btn.setFixedHeight(50)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.setCheckable(True) # Make checkable
         btn.setStyleSheet(SIDEBAR_BUTTON_STYLE)
         return btn
+        
+    def handle_menu_click(self, page_id):
+        # 1. Provide exclusive checking visual
+        for pid, btn in self.buttons.items():
+            btn.setChecked(pid == page_id)
+            
+        # 2. Switch Page
+        if page_id in self.pages:
+            self.content_area.setCurrentWidget(self.pages[page_id])

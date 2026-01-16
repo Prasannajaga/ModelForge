@@ -64,9 +64,28 @@ class ConvertOnnxModel:
             raise e
 
 
-    def is_torchscript_model(model) -> bool: 
+    def is_torchscript_model(self, model) -> bool: 
         return isinstance(model, torch.jit.RecursiveScriptModule)
     
+    def extract_shapes_from_torchscript(self,ts_model):
+        graph = ts_model.inlined_graph 
+        shapes = []
+
+        for inp in graph.inputs():
+            t = inp.type() 
+            print("type of t", t)
+            # Skip `self`
+            if t.kind() == "ClassType":
+                continue
+
+            if hasattr(t, "sizes") and t.sizes() is not None:
+                shapes.append(tuple(t.sizes()))
+            else:
+                shapes.append(None)  # dynamic or unknown
+
+        # first input is usually `self`
+        return shapes[1:] 
+
     def _convert_pytorch(
         self,
         input_path: str,
@@ -77,6 +96,10 @@ class ConvertOnnxModel:
   
         model = self._load_pytorch_model(input_path)
         model.eval()
+        
+        if self.is_torchscript_model(model):
+            input_shapes = self.extract_shapes_from_torchscript(model) 
+            print("input_shapes" , input_shapes)
   
         dummy_input = self._build_dummy_input(model, input_shapes)
         if not isinstance(dummy_input, tuple):
